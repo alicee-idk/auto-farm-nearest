@@ -1,0 +1,51 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local enemiesFolder = workspace.Enemies["Demon Village"]
+local virtualInputManager = game:GetService("VirtualInputManager")
+
+local autoFarmEnabled = false
+local teleportCooldown = 0.1
+local clickCooldown = 0.1
+
+-- Função para encontrar o inimigo mais próximo
+local function getNearestEnemy()
+    local nearestEnemy = nil
+    local shortestDistance = math.huge
+    for _, enemy in pairs(enemiesFolder:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+            local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+            local distance = (humanoidRootPart.Position - enemyRoot.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearestEnemy = enemy
+            end
+        end
+    end
+    return nearestEnemy
+end
+
+-- Função de Auto Click usando VirtualInputManager
+local function autoClick()
+    while autoFarmEnabled do
+        virtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        wait(0.1)
+        virtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+        wait(clickCooldown)
+    end
+end
+
+
+spawn(function()
+    while autoFarmEnabled do
+        local enemy = getNearestEnemy()
+        if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+            local enemyRoot = enemy.HumanoidRootPart
+            local behindPosition = enemyRoot.CFrame * CFrame.new(0, 0, 3) -- Teleporta atrás do inimigo
+            humanoidRootPart.CFrame = behindPosition
+        end
+        wait(teleportCooldown)
+    end
+end)
+
+spawn(autoClick)
